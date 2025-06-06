@@ -14,7 +14,8 @@ This repository contains ansible playbooks for deploying [ExaFS](https://github.
 
 The following tasks must be done manually before starting the deployment:
 
-* Installation and configuration of Apache httpd + Shibboleth + HTTPS certificates + ProxyPass including X-Forwarded-For. Configuration files `shib.conf` and `ssl.conf` are provided as examples in [./docs/apache\_conf](./docs/apache_conf)
+* Instalation of HTTP server and choice of auth method. Our recomended combination is Apache httpd + Shibboleth Auth. Don't forget to set HTTPS certificates and finally configure ProxyPass to Docker.
+* Proxy config should include X-Forwarded-For header. Configuration files `shib.conf` and `ssl.conf` are provided as examples in [./docs/apache\_conf](./docs/apache_conf)
 * Installation of [Docker + Docker Compose plugin](https://docs.docker.com/engine/install/rhel/) from the Docker repository.
 * Firewall configuration
 * For RHEL, the `codeready-builder-for-rhel-9-x86_64-rpms` repository must be enabled due to dependencies (python3.xx packaging).

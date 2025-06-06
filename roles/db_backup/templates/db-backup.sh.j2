@@ -1,0 +1,17 @@
+#!/bin/bash
+
+BKUP_DIR="/opt/exafs/backups"
+BKUP_NAME="$(date +%Y%m%d%H%M)-backup-{{ env_variables.mysql_database }}.sql.gz"
+
+# get backup users credentials
+source $BKUP_DIR/.env
+
+# Create backup using docker compose exec
+# NOTE: --routines flag makes sure stored procedures are also backed up
+cd /opt/exafs && \
+docker compose exec -T mariadb \
+    mariadb-dump --routines {{ env_variables.mysql_database }} \
+    -u ${MYSQL_USER} -p${MYSQL_PASS} | gzip > ${BKUP_DIR}/${BKUP_NAME}
+
+# Keep only last 7 days of backups
+find ${BKUP_DIR} -name "*-backup-{{ env_variables.mysql_database }}.sql.gz" -mtime +7 -delete

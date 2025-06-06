@@ -1,0 +1,45 @@
+
+### Config v2.0 20250212 -B- -Pepa- Albert
+
+    process flowspec {
+       run /usr/local/bin/exabgp-process;
+       encoder json;
+    }
+
+### BGP peer RR1 START
+    neighbor 10.10.10.1 {
+        description "RR1";
+        hold-time 30;
+        local-address 192.168.1.1;
+        md5-password heslo;
+        local-as 65530;
+        peer-as 65530;
+
+        family {
+          ipv4 flow;
+          ipv4 flow-vpn;
+          ipv6 flow;
+          ipv6 flow-vpn;
+          ipv4 unicast;
+          ipv4 mpls-vpn;
+          ipv6 unicast;
+          ipv6 mpls-vpn;
+        }
+        ### FlowSpec START - sample
+        flow {
+           route {
+              match {
+                source 192.168.1.1/32;
+                destination 172.16.0.1/32;
+              }
+              then {
+                redirect 65535:1001;
+              }
+           }
+        }
+        ### FlowSpec END
+        api {
+            processes [ flowspec ];
+        }
+    }
+### BGP peer RR1 END

@@ -1,0 +1,15 @@
+# Docker logs for ExaFS services
+if $programname startswith 'exafs-' then {
+  if $programname == 'exafs-exafs' then {
+    /opt/exafs/logs/exafs.log
+    stop
+  }
+  if $programname == 'exafs-mariadb' then {
+    /opt/exafs/logs/mariadb.log
+    stop
+  }
+  if $programname == 'exafs-rabbitmq' then {
+    /opt/exafs/logs/rabbitmq.log
+    stop
+  }
+}

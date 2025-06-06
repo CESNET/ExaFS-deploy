@@ -1,0 +1,75 @@
+- name: Create backup user
+  ansible.builtin.command:
+    cmd: >-
+      docker compose exec -T mariadb mariadb
+      -uroot
+      -p"{{ env_variables.mysql_root_password }}"
+      -e "
+      CREATE USER IF NOT EXISTS 'db_user_backups'@'%'
+      IDENTIFIED BY '{{ backup_user_password }}';
+      GRANT LOCK TABLES, SELECT, SHOW VIEW, REPLICATION CLIENT
+      ON *.*
+      TO 'db_user_backups'@'%';
+      "
+  args:
+    chdir: /opt/exafs
+  become: true
+  become_user: deploy
+  register: create_user_result
+  changed_when: create_user_result.rc == 0
+  failed_when: create_user_result.rc != 0
+
+- name: Set global log_bin_trust_function_creators
+  ansible.builtin.command:
+    cmd: >-
+      docker compose exec -T mariadb mariadb
+      -uroot
+      -p"{{ env_variables.mysql_root_password }}"
+      -e "SET GLOBAL log_bin_trust_function_creators = 1;"
+  args:
+    chdir: /opt/exafs
+  become: true
+  become_user: deploy
+  register: set_variable_result
+  changed_when: set_variable_result.rc == 0
+  failed_when: set_variable_result.rc != 0
+
+- name: Create backup directory
+  ansible.builtin.file:
+    path: /opt/exafs/backups
+    state: directory
+    mode: '0775'
+    owner: deploy
+    group: deploy
+
+- name: Create backup environment file
+  ansible.builtin.template:
+    src: templates/backup.env.j2
+    dest: /opt/exafs/backups/.env
+    mode: '0600'
+    owner: deploy
+    group: deploy
+
+- name: Create backup script
+  ansible.builtin.template:
+    src: templates/db-backup.sh.j2
+    dest: /opt/exafs/backups/db-backup.sh
+    mode: '0775'
+    owner: deploy
+    group: deploy
+
+- name: Create empty log file
+  ansible.builtin.file:
+    path: /opt/exafs/backups/db-backup.log
+    state: touch
+    mode: '0664'
+    owner: deploy
+    group: deploy
+
+- name: Setup backup cron job
+  ansible.builtin.cron:
+    name: "Database backup"
+    user: deploy
+    hour: "3"
+    minute: "0"
+    job: "/opt/exafs/backups/db-backup.sh >> /opt/exafs/backups/db-backup.log 2>&1"

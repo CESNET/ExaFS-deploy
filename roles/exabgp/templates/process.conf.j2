@@ -1,0 +1,19 @@
+[api]
+type = rabbitmq
+
+[logging]
+log_dir = /var/log/exabgp/
+log_file = exabgp_api.log
+log_format = %(asctime)s:  %(message)s    # Log format
+
+[rabbitmq]
+host = localhost         
+port = 5672
+user = {{ env_variables['exa_api_rabbit_user'] }}
+password = {{ env_variables['exa_api_rabbit_pass'] }}
+vhost = {{ env_variables['exa_api_rabbit_vhost'] }}
+queue = {{ env_variables['exa_api_rabbit_queue'] }}
+
+[http]
+host = localhost
+port = 5000

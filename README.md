@@ -2,13 +2,14 @@ Here is the English translation of the README file:
 
 # Deployment of ExaFS using Docker Compose + Ansible
 
-This repository contains ansible playbooks for deploying ExaFS with docker compose on target machine.
+This repository contains ansible playbooks for deploying [ExaFS](https://github.com/CESNET/) with docker compose on target machine.
 
 ## Introductory Notes
 
-* The Ansible playbooks expect the target OS to be RPM-based – RHEL 9 or Rocky Linux.
+* The Ansible playbooks currently expect the target OS to be RPM-based – RHEL 9 or Rocky Linux. Other OS support in progress. 
 * Services are installed under the root account, with possible privilege escalation to the `deploy` user.
 * You must set up an SSH key on the target server and have Ansible installed to run the playbook.
+
 
 ## What Needs to Be Resolved in Advance
 
@@ -33,6 +34,7 @@ The following tasks must be done manually before starting the deployment:
   * Requirements: `click`, `PyYAML`. See *requirements.txt*
 * Create an entry for the server in **/inventory/host\_vars/hosts.yaml**
 * In **roles/exafs/files/exafs\_app/**, modify **config.py** and **run.py** if needed, according to the planned installation. Key parameters are usually set via environment variables, so modifying **secrets.yaml** is often sufficient.
+* Currently the develop branch of [ExaFS repository](https://github.com/CESNET/exafs/tree/develop) is used. This can be modified in the **Dockerfile** of exafs role in **roles/exafs/files/exafs\_app/**
 * The directory **roles/exafs/files/database/** contains the files **01\_app\_tables\_data.sql** and **02\_rule\_tables\_empty.sql**, which create the basic database structure used in CESNET. The content can be replaced by a database dump (e.g., when restoring from a backup). If the database doesn't have the ExaFS 1.0.x structure, migration is necessary.
 * Run `ansible-playbook site.yaml`. This file defines the order of playbooks – database, RabbitMQ, application, ExaBGP + process. If needed, you can run each playbook separately, for example:
   `ansible-playbook site.yaml --tags exabpg`

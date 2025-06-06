@@ -1,0 +1,115 @@
+---
+
+- name: Ensure deploy user is in docker group
+  ansible.builtin.user:
+    name: deploy
+    groups: docker
+    append: true
+
+- name: Create application directory
+  ansible.builtin.file:
+    path: "/opt/exafs"
+    state: directory
+    mode: '0755'
+    owner: deploy
+    group: deploy
+
+- name: Create logs directory
+  ansible.builtin.file:
+    path: "/opt/exafs/logs"
+    state: directory
+    mode: '0755'
+    owner: deploy
+    group: deploy
+
+- name: Copy application files
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "/opt/exafs/{{ item.dest }}"
+    mode: '0644'
+    owner: deploy
+    group: deploy
+  with_items:
+    - { src: "database/", dest: "database/" }
+    - { src: "exafs_app/", dest: "exafs_app/" }
+
+- name: Template docker-compose.yaml
+  ansible.builtin.template:
+    src: docker-compose.yaml.j2
+    dest: /opt/exafs/docker-compose.yaml
+    mode: '0644'
+    owner: deploy
+    group: deploy
+
+- name: Template environment file
+  ansible.builtin.template:
+    src: exafs.env.j2
+    dest: /opt/exafs/exafs.env
+    mode: '0600'
+    owner: deploy
+    group: deploy
+  vars:
+    env_vars: "{{ env_variables }}"
+
+- name: Configure rsyslog for Docker logs
+  ansible.builtin.template:
+    src: exafs-docker.conf.j2
+    dest: /etc/rsyslog.d/10-exafs-docker.conf
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Restart rsyslog
+  ansible.builtin.service:
+    name: rsyslog
+    state: restarted
+
+- name: Configure logrotate
+  ansible.builtin.template:
+    src: logrotate.conf.j2
+    dest: /etc/logrotate.d/exafs
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Tear down existing services
+  community.docker.docker_compose_v2:
+    project_src: /opt/exafs
+    state: absent
+  become: true
+  become_user: deploy
+
+- name: Build services with no cache
+  community.docker.docker_compose_v2:
+    project_src: /opt/exafs
+    files:
+      - docker-compose.yaml
+    build: always
+  become: true
+  become_user: deploy
+
+- name: Create and start services
+  community.docker.docker_compose_v2:
+    project_src: /opt/exafs
+    files:
+      - docker-compose.yaml
+    remove_orphans: true
+  become: true
+  become_user: deploy
+  register: compose_output
+
+- name: Run database migrations
+  ansible.builtin.import_tasks:
+    file: database-migration.yaml
+  when: run_migrations | default(false) | bool
+
+- name: Verify all services are running
+  ansible.builtin.assert:
+    that:
+      - exafs_container.State == 'running'
+      - mariadb_container.State == 'running'
+      - rabbitmq_container.State == 'running'
+  vars:
+    exafs_container: "{{ compose_output.containers | selectattr('Service', 'equalto', 'exafs') | first }}"
+    mariadb_container: "{{ compose_output.containers | selectattr('Service', 'equalto', 'mariadb') | first }}"
+    rabbitmq_container: "{{ compose_output.containers | selectattr('Service', 'equalto', 'rabbitmq') | first }}"

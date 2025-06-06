@@ -1,0 +1,141 @@
+- name: Install pip
+  ansible.builtin.package:
+    name: python3-pip
+    state: present
+
+- name: Install ExaBGP package using default system pip
+  ansible.builtin.pip:
+    name: exabgp
+    state: present
+    executable: pip3
+
+- name: Install ExaBGP-Process package using default system pip
+  ansible.builtin.pip:
+    name: exabgp_process
+    state: present
+    executable: pip3
+
+- name: Create required system user
+  ansible.builtin.user:
+    name: nobody
+    system: true
+    state: present
+    create_home: false
+
+- name: Create required directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: nobody
+    group: nobody
+    mode: '0755'
+  loop:
+    - /etc/exabgp
+    - /var/log/exabgp
+    - /usr/local/run
+
+- name: Create FIFO files
+  ansible.builtin.command: mkfifo {{ item }}
+  args:
+    creates: "{{ item }}"
+  loop:
+    - /usr/local/run/exabgp.in
+    - /usr/local/run/exabgp.out
+
+- name: Set ownership and permissions for FIFO files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: nobody
+    group: nobody
+    mode: '0600'
+  loop:
+    - /usr/local/run/exabgp.in
+    - /usr/local/run/exabgp.out
+
+- name: Create ExaBGP systemd service file
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/exabgp.service
+    content: |
+      [Unit]
+      Description=ExaBGP
+      After=network.target
+
+      [Service]
+      Type=simple
+      User=nobody
+      Group=nobody
+      Environment=exabgp_daemon_daemonize=false
+      ExecStart=/usr/local/bin/exabgp /etc/exabgp/exabgp.conf
+      Restart=always
+      RestartSec=3
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+
+- name: Create systemd override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/exabgp.service.d
+    state: directory
+    mode: '0755'
+
+- name: Configure ExaBGP systemd override - announce all routes after start / restart
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/exabgp.service.d/override.conf
+    content: |
+      [Service]
+      ExecStartPost=/bin/sh -c 'sleep 10; curl -s https://{{ ansible_host }}/rules/announce_all'
+    mode: '0644'
+
+- name: Ensure configuration directory exists
+  ansible.builtin.file:
+    path: /etc/exabgp
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure log directory exists and is writable by ExaBGP
+  ansible.builtin.file:
+    path: /var/log/exabgp
+    state: directory
+    owner: nobody
+    group: nobody
+    mode: "0755"
+
+- name: Generate ExaBGP main configuration
+  ansible.builtin.template:
+    src: templates/exabgp.conf.j2
+    dest: /etc/exabgp/exabgp.conf
+    owner: root
+    group: root
+    mode: "0644"
+  tags: exabgp_config
+
+- name: Generate ExaBGP env file
+  ansible.builtin.template:
+    src: templates/exabgp.env.j2
+    dest: /usr/local/etc/exabgp/exabgp.env
+    owner: root
+    group: root
+    mode: "0644"
+  tags: exabgp_config
+
+- name: Generate ExaBGP Process configuration
+  ansible.builtin.template:
+    src: templates/process.conf.j2
+    dest: /etc/exabgp/process.conf
+    owner: root
+    group: root
+    mode: "0644"
+  tags: exabgp_proc_config
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start ExaBGP service
+  ansible.builtin.systemd:
+    name: exabgp
+    state: started
+    enabled: true

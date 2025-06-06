@@ -1,0 +1,10 @@
+---
+- name: Deploy ExaFS Application
+  hosts: exafs_servers
+  become: true
+  roles:
+    - { role: system_prep, tags: ['system'] }
+    - { role: exafs, tags: ['exafs'] }
+    - { role: exabgp, tags: ['exabgp'] }
+    - { role: db_backup, tags: ['backup'] }
+    - { role: cron_jobs, tags: ['cron'] }

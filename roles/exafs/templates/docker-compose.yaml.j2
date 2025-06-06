@@ -1,0 +1,73 @@
+services:
+  exafs: 
+    image: exafs:{{ exafs_version | default('1.0.2') }}
+    container_name: exafs
+    restart: always
+    ports:
+      - "127.0.0.1:{{ exafs_port | default('8000') }}:8000"
+    build:
+      context: exafs_app/
+      dockerfile: Dockerfile
+    env_file:
+      - exafs.env  
+    depends_on:
+      - mariadb
+      - rabbitmq
+    networks:
+      - exafs
+    volumes:
+      - /opt/exafs/logs:/app/logs  
+    logging:
+      driver: "syslog"
+      options:
+        tag: "exafs-exafs"
+        syslog-facility: "local0"
+    
+  # mariadb
+  mariadb:
+    image: mariadb:11
+    container_name: mariadb
+    restart: always
+    env_file:
+      - exafs.env
+    networks:
+      - exafs
+    volumes:
+      - exafs-data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d
+    logging:
+      driver: "syslog"
+      options:
+        tag: "exafs-mariadb"
+        syslog-facility: "local0"
+
+  # rabbitmq
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    restart: always
+    env_file:
+      - exafs.env
+    ports:
+      - "127.0.0.1:15672:15672"
+      - "127.0.0.1:5672:5672"
+    networks:
+      - exafs
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:15672"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+    logging:
+      driver: "syslog"
+      options:
+        tag: "exafs-rabbitmq"
+        syslog-facility: "local0"
+
+networks:
+  exafs:
+    driver: bridge
+
+volumes:
+  exafs-data:
+    driver: local

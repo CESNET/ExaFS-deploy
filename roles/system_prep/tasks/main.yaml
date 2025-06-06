@@ -1,0 +1,19 @@
+---
+- name: Install required system packages
+  ansible.builtin.dnf:
+    name:
+      - "{{ python_version }}"
+      - "{{ python_version }}-pip"
+      - "{{ python_version }}-packaging"
+      - git
+      - gcc
+    state: present
+    update_cache: true
+
+- name: Ensure deploy user exists
+  ansible.builtin.user:
+    name: deploy
+    state: present
+    shell: /bin/bash
+    home: /home/deploy
+    create_home: true

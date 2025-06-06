@@ -1,0 +1,11 @@
+all:
+  children:
+    exafs_servers:
+      hosts:
+        example:
+          ansible_host: example.com
+          ansible_user: root
+          ansible_become: true
+          python_version: python3.12
+          
+        

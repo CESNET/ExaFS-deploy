@@ -1,0 +1,6 @@
+---
+- name: Setup Expired Rules Cleanup Cron
+  ansible.builtin.cron:
+    name: "Withdraw expired rules"
+    minute: "*/10"
+    job: "/bin/sh -c 'sleep 10; curl -s https://{{ ansible_host }}/rules/withdraw_expired'"

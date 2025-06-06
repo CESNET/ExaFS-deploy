@@ -1,0 +1,150 @@
+---
+# Database migration tasks
+
+- name: Check if migrations directory exists
+  ansible.builtin.command:
+    cmd: docker compose exec -T exafs bash -c "if [ -d 'migrations' ]; then echo 'migrations_exist'; else echo 'migrations_missing'; fi"
+  args:
+    chdir: /opt/exafs
+  become: true
+  become_user: deploy
+  register: migrations_check
+  changed_when: false
+
+- name: Check if alembic_version table exists when migrations directory is missing
+  ansible.builtin.shell: |
+    docker compose exec -T mariadb mariadb \
+    -u {{ env_variables.mysql_user }} \
+    -p{{ env_variables.mysql_password }} \
+    -D exafs \
+    -e "SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema='exafs'
+          AND table_name='alembic_version'"
+  args:
+    chdir: /opt/exafs
+  become: true
+  become_user: deploy
+  register: alembic_table_check
+  when: migrations_check.stdout is defined
+        and migrations_check.stdout is search('migrations_missing')
+  ignore_errors: true
+  changed_when: false
+
+- name: Drop alembic_version table if it exists when migrations need initialization
+  ansible.builtin.shell: |
+    docker compose exec -T mariadb mariadb \
+    -u {{ env_variables.mysql_user }} \
+    -p{{ env_variables.mysql_password }} \
+    -D exafs \
+    -e "DROP TABLE alembic_version"
+  args:
+    chdir: /opt/exafs
+  become: true
+  become_user: deploy
+  when: >
+    migrations_check.stdout is defined
+    and migrations_check.stdout is search('migrations_missing')
+    and alembic_table_check.stdout is defined
+    and alembic_table_check.stdout != ""
+  register: drop_table_output
+  changed_when: true
+
+- name: Display drop table output
+  ansible.builtin.debug:
+    var: drop_table_output
+  when: drop_table_output is defined and drop_table_output.stdout is defined
+
+- name: Initialize database migrations if not already initialized
+  ansible.builtin.command:
+    cmd: docker compose exec -T exafs flask db init
+  args:
+    chdir: /opt/exafs
+  become: true
+  become_user: deploy
+  when: migrations_check.stdout is defined and migrations_check.stdout is search('migrations_missing')
+  register: init_output
+  changed_when: true
+
+- name: Display migrations initialization output
+  ansible.builtin.debug:
+    var: init_output
+  when: init_output is defined and init_output.stdout is defined
+
+# Get current database migration state
+- name: Get current migration state from database
+  ansible.builtin.command:
+    cmd: docker compose exec -T exafs flask db current
+  args:
+    chdir: /opt/exafs
+  become: true
+  become_user: deploy
+  register: db_current
+  ignore_errors: true
+  changed_when: false
+
+# Handle missing revisions or initial database setup
+- name: Stamp database with current head if needed
+  ansible.builtin.command:
+    cmd: docker compose exec -T exafs flask db stamp head
+  args:
+    chdir: /opt/exafs
+  become: true
+  become_user: deploy
+  when: db_current.rc != 0 or db_current.stderr is search("Can't locate revision")
+  register: stamp_output
+  changed_when: true
+
+- name: Display stamp output
+  ansible.builtin.debug:
+    var: stamp_output
+  when: stamp_output is defined and stamp_output.stdout is defined
+
+# Generate new migration if there are model changes
+- name: Attempt to generate migration script (this may fail if no changes)
+  ansible.builtin.command:
+    cmd: docker compose exec -T exafs flask db migrate -m "Automated migration via ansible"
+  args:
+    chdir: /opt/exafs
+  become: true
+  become_user: deploy
+  register: migrate_output
+  ignore_errors: true
+  changed_when: migrate_output.rc == 0
+
+- name: Display migration generation output
+  ansible.builtin.debug:
+    var: migrate_output
+  when: migrate_output is defined
+
+# Apply any pending migrations
+- name: Apply any pending migrations
+  ansible.builtin.command:
+    cmd: docker compose exec -T exafs flask db upgrade
+  args:
+    chdir: /opt/exafs
+  become: true
+  become_user: deploy
+  register: upgrade_output
+  changed_when: true
+
+- name: Display migration application output
+  ansible.builtin.debug:
+    var: upgrade_output
+  when: upgrade_output is defined and upgrade_output.stdout is defined
+
+# Verify final migration state
+- name: Verify migrations were successful
+  ansible.builtin.command:
+    cmd: docker compose exec -T exafs flask db current
+  args:
+    chdir: /opt/exafs
+  become: true
+  become_user: deploy
+  register: final_migration
+  changed_when: false
+
+- name: Display current migration version
+  ansible.builtin.debug:
+    var: final_migration.stdout
+  when: final_migration is defined and final_migration.stdout is defined

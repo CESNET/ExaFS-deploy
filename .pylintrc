@@ -1,0 +1,7 @@
+[FORMAT]
+max-line-length = 125
+
+
+[MESSAGES CONTROL]
+# Add any other Pylint configurations you want
+disable = no-value-for-parameter

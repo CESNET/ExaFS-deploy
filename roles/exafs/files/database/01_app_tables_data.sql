@@ -50,7 +50,7 @@ INSERT INTO `action` VALUES
 (5,'QoS 100 Mbps','rate-limit 13107200','QoS',2),
 (6,'QoS 500 Mbps','rate-limit 65536000','QoS',2),
 (7,'Discard','discard','Discard',2),
-(8,'Accept','accept','Accept',2),
+(8,'Accept','accept','Accept',2);
 /*!40000 ALTER TABLE `action` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -78,7 +78,7 @@ LOCK TABLES `as_path` WRITE;
 /*!40000 ALTER TABLE `as_path` DISABLE KEYS */;
 INSERT INTO `as_path` VALUES
 (1,'185.140.236.0/24','2852 48091'),
-(2,'185.140.237.0/24','2852 48091'),
+(2,'185.140.237.0/24','2852 48091');
 /*!40000 ALTER TABLE `as_path` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -113,6 +113,7 @@ LOCK TABLES `community` WRITE;
 /*!40000 ALTER TABLE `community` DISABLE KEYS */;
 INSERT INTO `community` VALUES
 (1,'RTBH example','RTBH example',2,'2852:9999 65535:666 no-export','','',0),
+(2,'RTBH example 2','RTBH example 2',2,'1234:56789','','',0);
 /*!40000 ALTER TABLE `community` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -142,7 +143,7 @@ CREATE TABLE `organization` (
 LOCK TABLES `organization` WRITE;
 /*!40000 ALTER TABLE `organization` DISABLE KEYS */;
 INSERT INTO `organization` VALUES
-(1,'Cesnet','147.32.0.0/15\r\n147.228.0.0/14\r\n160.216.0.0/15\r\n146.102.0.0/16\r\n147.251.0.0/16\r\n158.194.0.0/16\r\n158.196.0.0/16\r\n193.84.32.0/20\r\n193.84.160.0/20\r\n193.84.192.0/19\r\n195.113.0.0/16\r\n195.178.64.0/19\r\n78.128.128.0/17\r\n2001:718::/29',0,0,0),
+(1,'All IP world','0.0.0.0/0\r\n::/0\r\n\r\n',0,0,0);
 /*!40000 ALTER TABLE `organization` ENABLE KEYS */;
 UNLOCK TABLES;
 

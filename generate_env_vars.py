@@ -38,8 +38,8 @@ import os
 import secrets
 import string
 
-import yaml
 import click
+import yaml
 
 
 # Function to generate a secure random password
@@ -151,4 +151,4 @@ def main(hostname, root_dir, exafs_env, local_ip, local_ip6):
 
 
 if __name__ == "__main__":
-    main()  # pylint: disable=no-value-for-parameter
+    main()

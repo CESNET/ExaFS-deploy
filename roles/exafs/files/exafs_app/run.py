@@ -13,7 +13,7 @@ exafs_env = environ.get("EXAFS_ENV", "Production")
 exafs_env = exafs_env.lower()
 
 # Call app factory
-if exafs_env == "devel" or exafs_env == "development":
+if exafs_env in ("devel", "development"):
     app = create_app(config.DevelopmentConfig)
 else:
     app = create_app(config.ProductionConfig)

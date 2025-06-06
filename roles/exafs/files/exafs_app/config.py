@@ -1,3 +1,27 @@
+"""
+Configuration module for the ExaFS application.
+
+This module defines the configuration settings for the ExaFS application across
+different environments. It includes three configuration classes:
+
+1. Config: Base configuration class with default settings for all environments.
+2. ProductionConfig: Configuration settings specific to production environment.
+3. DevelopmentConfig: Configuration settings specific to development environment.
+
+The configuration includes settings for:
+- Application identification and behavior
+- Authentication methods (SSO, header-based, local)
+- Security keys and secrets
+- ExaAPI communication (HTTP or RabbitMQ)
+- Flowspec and RTBH rule limits
+- VRF (Virtual Routing and Forwarding) settings
+- Multi-neighbor BGP configuration
+- Database connections
+- Logging
+
+Environment variables are used for sensitive information and can override default values.
+"""
+
 import os
 
 

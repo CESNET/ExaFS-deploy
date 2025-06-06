@@ -5,7 +5,7 @@ This repository contains Ansible playbooks for deploying [ExaFS](https://github.
 
 ## Introductory Notes
 
-* The Ansible playbooks currently expect the target OS to be RPM-based – RHEL 9 or Rocky Linux. Support for other operating systems is in progress.
+* The Ansible playbooks currently expect the target OS to be RPM-based – RHEL 9 or Rocky Linux. Support for other operating systems is work in progress.
 * Services are installed under the root account, with possible privilege escalation to the `deploy` user.
 * You must set up an SSH key on the target server and have Ansible installed to run the playbook.
 
@@ -52,7 +52,7 @@ The following tasks must be completed manually before starting the deployment:
 5. **Configure database**
    * The directory `roles/exafs/files/database/` contains the files `01_app_tables_data.sql` and `02_rule_tables_empty.sql`, which create the basic database structure used in CESNET
    * The content can be replaced by a database dump (e.g., when restoring from a backup)
-   * If the database doesn't have the ExaFS 1.0.x structure, migration is necessary
+   * If the database doesn't have the ExaFS 1.1.x structure, migration is necessary (see 7. bellow)
 
 6. **Run deployment**
    * Run `ansible-playbook site.yaml`
@@ -70,7 +70,7 @@ The following tasks must be completed manually before starting the deployment:
    * If database migration is needed, run the script with an environment variable that triggers the migration
    * Migration is only necessary when the model changes – typically with a major application version change (see ExaFS changelog)
    ```bash
-   ansible-playbook -i inventory site.yaml -e "run_migrations=true" --limit exa.civ.cvut.cz
+   ansible-playbook -i inventory site.yaml -e "run_migrations=true" --limit hostname
    ```
 
 ## What Gets Installed and Where?
@@ -95,7 +95,7 @@ The following tasks must be completed manually before starting the deployment:
 ## Post-Installation Configuration
 
 * **ExaBGP configuration**
-  * Final configuration of ExaBGP + connecting BGP to the network (ExaBGP package will be installed)
+  * [ExaBGP package](https://github.com/Exa-Networks/exabgp) is installed by Ansible scripts, but need final configuration.
   * At the beginning of `/etc/exabgp/exabgp.conf`, add:
 
 ```
@@ -104,3 +104,4 @@ process flowspec {
     encoder json;
 }
 ```
+  * Connect ExaBGP to your network

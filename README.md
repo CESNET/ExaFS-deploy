@@ -1,6 +1,5 @@
-Here is the English translation of the README file:
-
-# Deployment of ExaFS using Docker Compose + Ansible
+# Deployment scripts for ExaFS
+## with Docker Compose and Ansible
 
 This repository contains ansible playbooks for deploying [ExaFS](https://github.com/CESNET/) with docker compose on target machine.
 

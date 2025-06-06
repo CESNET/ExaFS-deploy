@@ -9,18 +9,18 @@ import config
 
 
 # Configurations
-exafs_env = environ.get("EXAFS_ENV", "Production")
-exafs_env = exafs_env.lower()
+EXAFS_ENV = environ.get("EXAFS_ENV", "Production")
+EXAFS_ENV = EXAFS_ENV.lower()
 
 # Call app factory
-if exafs_env in ("devel", "development"):
-    app = create_app(config.DevelopmentConfig)
+if EXAFS_ENV in ("devel", "development"):
+    APP = create_app(config.DevelopmentConfig)
 else:
-    app = create_app(config.ProductionConfig)
+    APP = create_app(config.ProductionConfig)
 
 # init database object
-db.init_app(app)
+db.init_app(APP)
 
 # run app
 if __name__ == "__main__":
-    app.run(host="::", port=8080, debug=True)
+    APP.run(host="::", port=8080, debug=True)
